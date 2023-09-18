@@ -1,34 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
-import Map from './components/Map';
+import LocationMap from './components/LocationMap';
 import Footer from './components/Footer';
 
 function App() {
-  const [origin, setOrigin] = useState(null);
-  const [destination, setDestination] = useState(null);
+  const [apiLoaded, setApiLoaded] = useState(false);
   const [travelMode, setTravelMode] = useState('DRIVING');
   const [mapLocation, setMapLocation] = useState(null); // Store user's GPS location here
+  const [searchedLocation, setSearchedLocation] = useState(null);
 
   const handleSearch = (address, location) => {
-    if (!origin) {
-      setOrigin(location);
-    } else {
-      setDestination(location);
-    }
+    setSearchedLocation(location);
   };
 
   const handleTravelModeChange = (mode) => {
     setTravelMode(mode);
   };
 
+  const handleGetCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        setMapLocation({ lat: latitude, lng: longitude }); // Set the user's GPS location here
+      });
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+    }
+  };
+
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyABz5ezvSPPQMHhhHpeSdfDysyoze-SbBQ&libraries=places`; // Replace with your API key
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyABz5ezvSPPQMHhhHpeSdfDysyoze-SbBQ&libraries=places`;
     script.async = true;
     script.defer = true;
 
     script.onerror = () => {
       console.error('Error loading Google Maps API.');
+    };
+
+    script.onload = () => {
+      setApiLoaded(true);
     };
 
     document.body.appendChild(script);
@@ -41,8 +52,10 @@ function App() {
   return (
     <div className="App">
       <h1>Location Finder App</h1>
-      <div className='cont'>
-        <SearchBar onSearch={handleSearch} setMapLocation={setMapLocation} />
+      <div className="cont">
+        {apiLoaded && (
+          <SearchBar onSearch={handleSearch} setMapLocation={setMapLocation} />
+        )}
         <div>
           <label>Select Travel Mode:</label>
           <select
@@ -53,9 +66,18 @@ function App() {
             <option value="WALKING">Walking</option>
           </select>
         </div>
+        <button onClick={handleGetCurrentLocation}>
+          Get My Current Location
+        </button>
       </div>
 
-      <Map apiKey="AIzaSyABz5ezvSPPQMHhhHpeSdfDysyoze-SbBQ" origin={origin} destination={destination} mapLocation={mapLocation} />
+      {apiLoaded && (
+        <LocationMap
+          apiKey="AIzaSyABz5ezvSPPQMHhhHpeSdfDysyoze-SbBQ"
+          mapLocation={mapLocation}
+          searchedLocation={searchedLocation}
+        />
+      )}
       <Footer />
     </div>
   );

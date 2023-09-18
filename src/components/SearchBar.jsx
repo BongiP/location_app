@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const SearchBar = ({ onSearch, setMapLocation }) => {
+const SearchBar = ({ onSearch, mapLocation, setMapLocation }) => {
   const [address, setAddress] = useState('');
 
   const handleSubmit = async (e) => {
@@ -9,16 +9,23 @@ const SearchBar = ({ onSearch, setMapLocation }) => {
     try {
       const geocoder = new window.google.maps.Geocoder();
 
-      if (navigator.geolocation) {
+      // Only set the map's center to the user's location if mapLocation is not available
+      if (!mapLocation && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
           const { latitude, longitude } = position.coords;
           setMapLocation({ lat: latitude, lng: longitude }); // Set the user's GPS location here
         });
       }
 
-      geocoder.geocode({ address: address }, (results, status) => {
+      geocoder.geocode({ address }, (results, status) => {
         if (status === 'OK' && results[0] && results[0].geometry) {
           onSearch(address, results[0].geometry.location);
+
+          // Set the map's center to the geocoded location
+          if (!mapLocation) {
+            setMapLocation(results[0].geometry.location);
+          }
+
           setAddress('');
         } else {
           console.error('Geocode request failed:', status);
@@ -48,3 +55,4 @@ const SearchBar = ({ onSearch, setMapLocation }) => {
 };
 
 export default SearchBar;
+
